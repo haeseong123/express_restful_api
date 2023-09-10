@@ -1,26 +1,20 @@
 import dotEnv from 'dotenv';
 import express, { Router } from "express";
-import { createPromisePool } from './config/database';
 import users from './user/userRouter';
-import { UserController } from './user/userController';
-import { UserService } from './user/userService';
-import { UserRepository } from './user/userRepository';
+import { DIContainer } from './di/diContainer';
+import createDependencies from './di/createDependencies';
 
 dotEnv.config();
 
 function bootstrap() {
     const app = express();
     const router = Router();
-    const pool = createPromisePool();
+    const container = new DIContainer(createDependencies())
 
     app.use(express.json()) // application/json일때 request 본문을 req.body에 저장
     app.use(express.urlencoded({ extended: true })) // x=www=form-urlencoded일때 request 본문을 req.body에 저장
 
-    const userRepository = new UserRepository(pool);
-    const userService = new UserService(userRepository);
-    const userController = new UserController(userService);
-
-    users(router, userController);
+    users(router, container.resolve("userController"));
     app.use('/', router);
 
     app.listen(process.env.APP_PORT, () => {
